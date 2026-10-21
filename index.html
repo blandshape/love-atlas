@@ -96,8 +96,8 @@ function render(){if(state.phase==='welcome'){app.innerHTML=`<section class="pan
   const modelNote=H('ROM')&&H('RSP')?'戀愛意向與對象特殊性共同出現，與浪漫吸引相容；Sternberg 愛情三角理論可進一步區分激情、親密與承諾，但目前尚非正式量表。':H('IDE')&&H('ATT')?'理想化與反覆想念可能涉及迷戀（limerence）的一部分現象，需觀察是否伴隨強迫性思考與互惠不確定感。':H('UNC')&&H('REC')?'依附理論提醒：關係不確定可能活化尋求安全感的行為，但單次對特定人的作答不能診斷依附風格。':H('SEX')&&L('COM')?'愛情三角理論區分激情、親密與承諾；它們可以不同步，且本測驗尚未直接測量完整三角結構。':H('ATT')&&H('RSP')?'浪漫吸引、性吸引與依附需求是可區分但可能重疊的現象；單次作答只能提出候選解釋。':'關係科學通常區分吸引、親密、承諾與依附調節；本測驗目前只做探索性對照，不使用臨床或常模判定。';
  const tagHtml='<h2>此刻的關係標籤</h2>'+uniqueTags.slice(0,4).map(([t,d],i)=>'<div class="note"><strong>'+(i===0?'主要標籤：':'伴隨線索：')+esc(t)+'</strong><div>'+esc(d)+'</div></div>').join('')+'<h2>心理學模型對照</h2><p>'+esc(modelNote)+'</p><p class="muted">延伸標籤不是性傾向、BDSM 身分或依附風格的自動判定；身分認同由當事人自行決定。BDSM 題組僅探索自願偏好與界線，所有實踐都必須有清楚同意。</p>';
   const semanticLines=[];
- if(state.semantics.sexLove==='love'&&low('COM')&&high('SEX'))semanticLines.push('你容許性親密被理解為愛，但目前對這個人的具體經驗以性吸引較突出、承諾想像較低。這不是矛盾或錯誤，而是你的「愛」可能涵蓋不以承諾為前提的關係。');
- if(state.semantics.sexLove==='distinct'&&high('SEX'))semanticLines.push('你在概念上能區分性親密與愛；這次對象性吸引較明顯，但不能因此單獨推論戀慕。');
+ if(state.semantics.sexlove==='love'&&low('COM')&&high('SEX'))semanticLines.push('你容許性親密被理解為愛，但目前對這個人的具體經驗以性吸引較突出、承諾想像較低。這不是矛盾或錯誤，而是你的「愛」可能涵蓋不以承諾為前提的關係。');
+ if(state.semantics.sexlove==='distinct'&&high('SEX'))semanticLines.push('你在概念上能區分性親密與愛；這次對象性吸引較明顯，但不能因此單獨推論戀慕。');
  if(state.semantics.love==='sexual'&&low('SEX')&&high('AFF'))semanticLines.push('你傾向將性親密視為愛的重要線索，但這次更明顯的是關懷。你的定義與經驗未必衝突，可能反映不同形式的愛。');
  if(state.semantics.romance==='desire'&&low('SEX')&&high('SEN'))semanticLines.push('你將性接觸視為戀慕的重要判準，但這次更期待非性的身體親近；可以重新觀察自己如何區分浪漫與感官親密。');
  const selfRoutes={myfeel:'你主要想釐清自己的感受；結果將優先比較好奇、戀慕、性吸引與關懷。',other:'你主要不確定對方的態度；本問卷只能分析你的經驗，不能讀取對方心意。',selfpattern:'你想理解跨對象的親密模式；單一對象不足以判定性／浪漫光譜或依附風格。',both:'你的自我需求與關係理解都還在探索中，暫時保留多重假設。',none:'你對自己的困惑不明顯；本次結果可當作一份可回訪的觀察快照。'};
