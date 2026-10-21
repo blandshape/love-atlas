@@ -1,60 +1,122 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LOVE ATLAS V0.8｜關係狀態鑑別</title><style>
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LOVE ATLAS V0.9｜關係狀態鑑別</title><style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,'Noto Sans TC',sans-serif}*{box-sizing:border-box}body{background:#10121d;color:#f0eef8;margin:0;line-height:1.7}main{max-width:750px;margin:auto;padding:22px 17px 80px}.brand{letter-spacing:.19em;font-size:12px;color:#b5a9fa}.panel{border:1px solid #373449;border-radius:20px;background:#1a1b2b;padding:25px;margin-top:20px}.muted{color:#b3b0c5;font-size:14px}.tag{display:inline-block;background:#302e4b;border-radius:99px;padding:3px 12px;font-size:12px;color:#d5d0fa}h1{font-size:30px;line-height:1.3}h2{font-size:21px;line-height:1.4}.options{display:grid;gap:9px;margin:18px 0}.opt{border:1px solid #4c4863;background:#242538;color:#fff;border-radius:12px;padding:13px;text-align:left;font-size:15px;cursor:pointer}.opt[aria-pressed=true]{background:#514a88;border-color:#b3a6ff}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:24px}button{cursor:pointer}button.primary{background:#aa9aff;color:#161229;border:0;border-radius:12px;padding:12px 20px;font-weight:700}button.secondary{background:transparent;color:#e5e1ff;border:1px solid #66617d;border-radius:12px;padding:12px 20px}button:disabled{opacity:.35;cursor:not-allowed}.bar{height:7px;background:#333348;border-radius:20px;overflow:hidden;margin:14px 0}.bar>div{height:100%;background:#aa9aff}.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:18px 0}.scale button{background:#26273a;color:white;border:1px solid #56536c;border-radius:12px;padding:15px 2px;font-size:17px}.scale button.selected{background:#655ca2;border-color:#c6baff}.poles{display:flex;justify-content:space-between;gap:20px;color:#b3b0c5;font-size:13px}.result{border-top:1px solid #45425d;padding:15px 0}.metric{display:flex;justify-content:space-between;gap:10px;font-size:14px}.meter{height:8px;background:#343248;border-radius:10px;overflow:hidden}.meter div{height:100%;background:#b3a4ff}.note{border-left:3px solid #a99aff;padding:12px;background:#29263b;border-radius:5px;margin:12px 0}.warning{font-size:13px;color:#b6b1c9}.hidden{display:none}a{color:#c5baff}input[type=checkbox]{accent-color:#aa9aff}footer{font-size:12px;color:#9692aa;margin-top:32px}@media(max-width:440px){.panel{padding:18px}h1{font-size:25px}}
-</style></head><body><main><div class="brand">LOVE ATLAS / V0.8</div><div id="app"></div><footer>探索原型，不是診斷工具。尚未經過信效度驗證；答案只在本機運算，除非你自行匯出。</footer></main><script>
+</style></head><body><main><div class="brand">LOVE ATLAS / V0.9</div><div id="app"></div><footer>探索原型，不是診斷工具。尚未經過信效度驗證；答案只在本機運算，除非你自行匯出。</footer></main><script>
+'use strict';
 const app=document.querySelector('#app');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const LABEL={rom:'戀慕',sex:'性吸引',cur:'好奇',unc:'互惠焦慮',ideal:'理想化迷戀',close:'非浪漫親密'};
-const PROFILES={
-rom:{title:'少裝了，你就是暈船。',sub:'你想靠近的不只是魅力，而是這個人與你可能建立的特殊關係。',caution:'但強烈的戀愛意向，不等於對方已經回應。'},
-sex:{title:'你想睡他，不等於你想跟他過日子。',sub:'身體與性吸引可能比伴侶關係的期待更突出。',caution:'性吸引可以與愛並存，也可以獨立存在。'},
-cur:{title:'你是好奇，不是已經簽了戀愛合約。',sub:'這個人引起你的注意，但你還在蒐集線索。',caution:'好奇可能發展成戀慕，也可能隨了解而改變。'},
-unc:{title:'你可能不是在等愛，是在等判決書。',sub:'對方是否回應、關係是否確定，可能正在主導你的心情。',caution:'不確定性帶來的牽掛，不代表你對對方沒有真實好感。'},
-ideal:{title:'你可能愛上了尚未寫完的人物設定。',sub:'想像中的對方，比你已經確認的對方更鮮明。',caution:'這不是說你的感受虛假，而是現實資訊還不足。'},
-close:{title:'你想靠近，但不一定要談戀愛。',sub:'陪伴、理解與溫柔的親近，可能比戀愛身份更重要。',caution:'非浪漫親密不是比較低階的感情。'}
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TYPES={
+R:{name:'戀慕意向',title:'少裝了，你是真的想跟他談戀愛。',body:'你想要的不只是靠近，而是與這個人建立獨特、持續的伴侶式連結。'},
+S:{name:'性吸引',title:'想睡他，不代表想跟他過日子。',body:'對這個人的性吸引相對鮮明；這份渴望不需要靠戀愛身分來證明價值。'},
+C:{name:'探索好奇',title:'你還在看預告片，別急著買婚戒。',body:'你想了解這個人，但對關係走向仍保留空間；好奇本身就是一種真實的靠近。'},
+P:{name:'親密關懷',title:'想靠近，不一定要談戀愛。',body:'你重視理解、陪伴與關懷，但不一定追求伴侶身分。'},
+I:{name:'理想化投射',title:'你可能愛上了還沒寫完的人物設定。',body:'你對這個人的想像比已確認的互動更完整；感受真實，對象資訊卻仍待驗證。'},
+U:{name:'互惠不確定性',title:'你可能不是在等愛，是在等判決書。',body:'對方是否回應、態度是否明朗，可能放大了你的牽掛與反覆思考。'}
 };
-const Q=[
-{id:'q1',dim:'rom',q:'想到這個人，你會希望彼此成為特別的伴侶，而不只是普通朋友嗎？'},
-{id:'q2',dim:'sex',adult:true,q:'你是否對這個人有過明確的性幻想或性接觸的渴望？'},
-{id:'q3',dim:'cur',q:'吸引你的主要是「我還想知道這個人到底是誰」嗎？'},
-{id:'q4',dim:'unc',q:'對方有沒有回應你，會明顯左右你當天的心情嗎？',need:'contact'},
-{id:'q5',dim:'ideal',q:'你是否常想像對方的個性與你們的未來，即使還沒有足夠的相處證據？'},
-{id:'q6',dim:'close',q:'即使沒有戀愛關係，你仍希望與這個人保持長期而親近的連結嗎？'},
-{id:'q7',dim:'rom',q:'如果沒有任何人知道你們的關係，你還會希望與他建立伴侶關係嗎？'},
-{id:'q8',dim:'unc',q:'當對方的態度不明朗時，你會反覆猜測每個訊息或細節的意思嗎？',need:'contact'},
-{id:'q9',dim:'ideal',q:'你對對方的了解，有多少主要來自自己的推測而非實際確認？',reverse:false},
-{id:'q10',dim:'cur',q:'如果能更了解他，但最後沒有發展成戀愛，你也會覺得值得嗎？'},
-{id:'q11',dim:'close',q:'比起交往名分，你更在意能否自然相處、彼此理解嗎？'},
-{id:'q12',dim:'rom',q:'即使暫時沒有性接觸，你仍期待和這個人發展伴侶式親密嗎？'}
+const GROUP={attraction:['R','S','C','P'],modifiers:['I','U']};
+const BANK=[
+{id:'r1',d:'R',q:'你會希望與這個人建立「我們是伴侶」的特殊關係嗎？',why:'區分伴侶意向與一般好感'},
+{id:'r2',d:'R',q:'即使沒有性接觸，你仍想和這個人發展戀愛式親密嗎？',why:'區分浪漫意向與性吸引'},
+{id:'r3',d:'R',q:'如果對方願意，你會想認真嘗試一起經營關係嗎？',why:'檢查實際關係意願'},
+{id:'r4',d:'R',q:'你期待的不只是短暫心動，而是日常生活也有彼此的位置嗎？',why:'檢查持續性期待'},
+{id:'s1',d:'S',adult:true,q:'你對這個人有明確的性幻想或性接觸渴望嗎？',why:'對象特定的性吸引'},
+{id:'s2',d:'S',adult:true,q:'即使不交往，你仍可能想和這個人發生雙方自願的性接觸嗎？',why:'區分性吸引與伴侶意向'},
+{id:'s3',d:'S',adult:true,q:'你對這個人的性吸引，比想與他共同生活的期待更突出嗎？',why:'比較性與伴侶需求'},
+{id:'c1',d:'C',q:'你最想做的是更了解這個人，而不是立刻確認關係嗎？',why:'探索動機'},
+{id:'c2',d:'C',q:'即使最後沒有交往，你仍覺得認識這個人很值得嗎？',why:'好奇與戀愛結果的分離'},
+{id:'c3',d:'C',q:'你對他的感覺還在變化，目前不想急著命名嗎？',why:'狀態開放性'},
+{id:'p1',d:'P',q:'即使彼此不成為戀人，你仍希望保有親近且互相支持的連結嗎？',why:'非浪漫親密需求'},
+{id:'p2',d:'P',q:'比起戀愛身分，你更在意能不能自然相處、真誠理解彼此嗎？',why:'關係品質與名分'},
+{id:'p3',d:'P',q:'你會關心他的處境，即使這不會使你們更親密嗎？',why:'關懷是否依賴回報'},
+{id:'i1',d:'I',q:'你對他的性格或你們的未來，有不少想法其實還沒經過現實確認嗎？',why:'想像與證據的落差'},
+{id:'i2',d:'I',q:'你有時會把少量互動反覆延伸成一段完整的關係故事嗎？',why:'理想化敘事'},
+{id:'i3',d:'I',q:'如果他和你想像的差很多，你的吸引力可能大幅降低嗎？',why:'吸引是否依賴理想形象'},
+{id:'u1',d:'U',needContact:true,q:'他的回覆速度或態度，會明顯影響你當天的情緒嗎？',why:'互惠敏感度'},
+{id:'u2',d:'U',needContact:true,q:'你會反覆推敲他的話，想知道自己在他心中的位置嗎？',why:'不確定性反芻'},
+{id:'u3',d:'U',needContact:true,q:'比起下一次相處，你更迫切想知道他究竟喜不喜歡你嗎？',why:'求確認與關係意向的區分'},
+{id:'u4',d:'U',needContact:true,q:'如果他明確表達態度，你覺得自己會少掉很多糾結嗎？',why:'不確定性的影響'},
+{id:'x1',d:'R',q:'如果你知道他永遠不會成為伴侶，你的心動可能大幅減少嗎？',why:'伴侶期待是否為核心'},
+{id:'x2',d:'P',q:'即使你們維持不帶戀愛名分的親密，你也可能感到滿足嗎？',why:'非戀愛關係的可接受性'},
+{id:'x3',d:'C',q:'你願意讓相處改變原本對他的判斷，而不是守著第一印象嗎？',why:'探索開放性'},
+{id:'x4',d:'I',q:'目前你所知道的他，還不足以支持你對他的大部分想像嗎？',why:'自覺的證據不足'}
 ];
-const DIFF={
-'rom:sex':[{q:'假設未來完全沒有性接觸的可能，你還想和他建立伴侶關係嗎？',a:['會，仍然想建立伴侶關係','不會，性吸引是主要原因','還不確定'],v:[[2,0],[0,2],[0,0]]},{q:'你更常想像哪一種場景？',a:['一起生活、分享日常','明確的性或身體接觸','兩者都有，難以分開'],v:[[2,0],[0,2],[1,1]]}],
-'rom:unc':[{q:'假設對方已清楚表示欣賞你，你仍想進一步認識並交往嗎？',a:['會，我想的是這個人','可能不會那麼在意了','不知道'],v:[[2,0],[0,2],[0,0]]},{q:'你最希望現在立刻發生的是？',a:['能一起度過一段真實的時間','對方給我一個明確答案','兩者都重要'],v:[[2,0],[0,2],[1,1]]}],
-'ideal:rom':[{q:'如果發現對方有不少缺點，且與你想像不同，你會怎麼做？',a:['仍想慢慢認識真實的他','吸引力可能大幅下降','尚不清楚'],v:[[0,2],[2,0],[0,0]]},{q:'你對他的重要判斷，主要來自什麼？',a:['實際相處與多次確認','有限片段加上大量想像','兩者都有'],v:[[0,2],[2,0],[1,1]]}],
-'close:rom':[{q:'如果你們一直保持親密，但不成為戀人，你會如何？',a:['大致滿足，這樣也很好','仍然遺憾，希望成為戀人','我還不確定'],v:[[2,0],[0,2],[0,0]]},{q:'你最在意的是？',a:['彼此能真誠相處','彼此選擇成為伴侶','目前無法分開'],v:[[2,0],[0,2],[1,1]]}],
-'cur:rom':[{q:'若知道這個人和你不適合交往，你還想了解他嗎？',a:['會，我仍覺得他有趣','興趣會明顯減少','不知道'],v:[[2,0],[0,2],[0,0]]},{q:'你想靠近，主要因為？',a:['想知道他真實的樣子','希望建立戀愛關係','兩者都有'],v:[[2,0],[0,2],[1,1]]}],
-'cur:ideal':[{q:'如果發現對方與你想像完全不同，你最可能？',a:['仍願意重新認識他','原本的吸引會崩塌','無法預測'],v:[[2,0],[0,2],[0,0]]},{q:'你目前更享受什麼？',a:['逐步發現新資訊','在心裡想像他與我的故事','兩者都有'],v:[[2,0],[0,2],[1,1]]}]
-};
-const GENERAL=[
-{q:'你最希望這段關係下一步發生什麼？',a:['真正相處，看看合不合','明確知道對方怎麼想','能夠更親密，但不急著定義'],v:[[1,0],[0,1],[0,0]]},
-{q:'如果一年後你們沒有在一起，你最在意什麼？',a:['失去和這個人建立伴侶關係的可能','一直不知道對方怎麼想','沒有更深入地認識彼此'],v:[[1,0],[0,1],[0,0]]}
+const DISCRIM=[
+{key:'P:R',q:'假設他只願意和你保持深厚友誼，你最接近哪種反應？',options:[['能接受，這份連結本身就重要',{P:2,R:0}],['會遺憾，我確實想成為戀人',{R:2,P:0}],['兩種感受都有',{P:1,R:1}],['目前無法想像',{}]]},
+{key:'R:S',q:'如果永遠不會發生性關係，你還會想與他建立伴侶關係嗎？',options:[['會，伴侶關係仍有吸引力',{R:2}],['不太會，性吸引是主要動機',{S:2}],['兩者都有，各有重要性',{R:1,S:1}],['我不知道',{}]]},
+{key:'C:R',q:'如果知道彼此不適合交往，你還會想了解他嗎？',options:[['會，認識他本身就有趣',{C:2}],['興趣會大幅降低',{R:2}],['兩種心情都有',{C:1,R:1}],['不確定',{}]]},
+{key:'C:P',q:'你最期待哪個畫面？',options:[['繼續發現他不同的面貌',{C:2}],['有默契地陪伴、支持彼此',{P:2}],['兩者都很重要',{C:1,P:1}],['都不太符合',{}]]},
+{key:'C:S',q:'如果你更了解他，卻發現沒有性吸引，你還想靠近嗎？',options:[['會，我仍想認識他',{C:2}],['吸引力會大幅減少',{S:2}],['兩者都可能',{C:1,S:1}],['不確定',{}]]},
+{key:'P:S',q:'如果彼此不會發生性接觸，你仍希望維持親近關係嗎？',options:[['會，陪伴本身很重要',{P:2}],['不太會，性吸引比較核心',{S:2}],['兩者都有',{P:1,S:1}],['不確定',{}]]}
 ];
-let state={phase:'welcome',path:'offline',adult:false,answers:{},index:0,base:[],pair:null,follow:[],followIndex:0,extra:{},saved:false};
-const valid=q=>!q.need||state.path!=='one';
-function initial(){state.base=Q.filter(q=>(!q.adult||state.adult)&&valid(q));state.phase='base';state.index=0;render()}
-function scores(){const total={},count={};for(const q of state.base){if(state.answers[q.id]!=null){total[q.dim]=(total[q.dim]||0)+state.answers[q.id];count[q.dim]=(count[q.dim]||0)+1}}return Object.fromEntries(Object.keys(LABEL).map(k=>[k,count[k]?total[k]/count[k]:null]))}
-function ranking(){return Object.entries(scores()).filter(([,v])=>v!==null).sort((a,b)=>b[1]-a[1])}
-function selectFollow(){const r=ranking(),top=r[0]?.[0]||'cur',second=r[1]?.[0]||'rom';const key=[top,second].sort().join(':');const candidates=DIFF[key]||GENERAL;state.pair=DIFF[key]?key.split(':'):[top,second];state.follow=candidates.map((x,i)=>({...x,id:'f'+i}));state.followIndex=0;state.phase='follow';render()}
-function finalRank(){const r=scores(),b={};Object.entries(r).forEach(([k,v])=>{if(v!==null)b[k]=v});if(state.pair){state.follow.forEach(f=>{const choice=state.answers[f.id];if(choice!=null){const w=f.v[choice]||[0,0];state.pair.forEach((d,i)=>{b[d]=(b[d]??0)+w[i]*0.65})}})}return Object.entries(b).sort((a,b)=>b[1]-a[1])}
-function history(){try{const x=JSON.parse(localStorage.getItem('loveAtlasV08')||'[]');return Array.isArray(x)?x:[]}catch{return []}}
-function snapshot(){return {at:new Date().toISOString(),version:'0.8',path:state.path,adult:state.adult,answers:{...state.answers},scores:scores(),ranking:finalRank(),pair:state.pair}}
-function save(){try{const h=history();h.push(snapshot());localStorage.setItem('loveAtlasV08',JSON.stringify(h.slice(-12)));return true}catch{return false}}
-function download(){const data=snapshot();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='love-atlas-v0.8.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-function showQuestion(q,n,total,follow=false){const val=state.answers[q.id];const opts=follow?q.a.map((t,i)=>[i,t]):[[0,'完全不像'],[1,'比較不像'],[2,'有點像'],[3,'很像'],[4,'非常像']];app.innerHTML='<section class="panel"><span class="tag">'+(follow?'關鍵鑑別':'先辨識你的感受')+' · '+n+' / '+total+'</span><div class="bar"><div style="width:'+(n/total*100)+'%"></div></div><h2>'+esc(q.q)+'</h2><p class="muted">'+(follow?'這一題用來區分兩種可能的解釋，不是考你對錯。':'請以這個人為對象，依目前的實際感受回答。')+'</p><div class="options">'+opts.map(([v,t])=>'<button class="opt" data-val="'+v+'" aria-pressed="'+(val===v)+'">'+esc(t)+'</button>').join('')+'</div><div class="actions"><button class="secondary" id="back">← 上一題</button><button class="primary" id="next" '+(val==null?'disabled':'')+'>'+(n===total?(follow?'查看結果':'進入鑑別'):'下一題')+' →</button></div></section>';document.querySelectorAll('[data-val]').forEach(el=>el.onclick=()=>{state.answers[q.id]=Number(el.dataset.val);render()});document.querySelector('#back').onclick=()=>{if(follow){if(state.followIndex>0)state.followIndex--;else{state.phase='base';state.index=state.base.length-1}}else if(state.index>0)state.index--;else state.phase='setup';render()};document.querySelector('#next').onclick=()=>{if(state.answers[q.id]==null)return;if(follow){if(++state.followIndex>=state.follow.length)state.phase='result'}else{if(++state.index>=state.base.length)selectFollow();else render();return}render()}}
-function render(){
-if(state.phase==='welcome'){app.innerHTML='<section class="panel"><span class="tag">V0.8 · 關係狀態鑑別</span><h1>戀慕為何？<br>愛是什麼？<br>我在哪裡？</h1><p>這次不考你愛的定義。先選一個人，看看你對他到底是什麼感覺。</p><p class="muted">標籤之外，我們都是關係與自我的這場戰鬥中，最前線的戰士。</p><div class="actions"><span></span><button class="primary" id="go">開始辨識 →</button></div></section>';document.querySelector('#go').onclick=()=>{state.phase='setup';render()};return}
-if(state.phase==='setup'){app.innerHTML='<section class="panel"><span class="tag">開始之前</span><h2>先在心裡選定一個人</h2><p class="muted">不必輸入姓名。請依你真正知道的互動作答，不要把對方的心意當作已確認的事實。</p><h2>你們的接觸情況？</h2><div class="options">'+[['one','單向關注，幾乎沒有雙向交流'],['online','有線上雙向交流'],['offline','有實際見面與相處']].map(([v,t])=>'<button class="opt" data-path="'+v+'" aria-pressed="'+(state.path===v)+'">'+t+'</button>').join('')+'</div><label><input type="checkbox" id="adult" '+(state.adult?'checked':'')+'> 我已成年，且願意回答直接涉及性幻想／性吸引的問題</label><p class="muted">未勾選仍可完成測驗，結果不會推斷你的性吸引強弱。約 10–14 題。</p><div class="actions"><span></span><button class="primary" id="start">開始 →</button></div></section>';document.querySelectorAll('[data-path]').forEach(el=>el.onclick=()=>{state.path=el.dataset.path;render()});document.querySelector('#adult').onchange=e=>{state.adult=e.target.checked};document.querySelector('#start').onclick=initial;return}
-if(state.phase==='base'){showQuestion(state.base[state.index],state.index+1,state.base.length);return}
-if(state.phase==='follow'){showQuestion(state.follow[state.followIndex],state.followIndex+1,state.follow.length,true);return}
-if(state.phase==='result'){const ranked=finalRank(),a=ranked[0],b=ranked[1],first=a?.[0]||'cur',second=b?.[0]||'close',p=PROFILES[first],raw=scores(),pair=state.pair||[],delta=(a?.[1]??0)-(b?.[1]??0),ambiguous=delta<0.65;const support=state.base.filter(q=>q.dim===first&&state.answers[q.id]>=3).map(q=>q.q).slice(0,2);const contrad=state.base.filter(q=>q.dim===first&&state.answers[q.id]<=1).map(q=>q.q).slice(0,1);const previous=history().at(-1);const change=previous?'<p class="muted">上次本機快照：'+esc(new Date(previous.at).toLocaleDateString('zh-TW'))+'；上次主要線索為「'+esc(LABEL[previous.ranking?.[0]?.[0]]||'未記錄')+'」。這只是不同時間的回答比較，不代表狀態必然進步或退步。</p>':'<p class="muted">目前沒有 V0.8 本機快照；可在下方保存以供下次比較。</p>';app.innerHTML='<section class="panel"><span class="tag">你的當前關係快照 · V0.8</span><h1>'+esc(ambiguous?'你可能正卡在兩種心情之間。':p.title)+'</h1><p>'+esc(ambiguous?'目前「'+LABEL[first]+'」與「'+LABEL[second]+'」都得到相近支持，還不宜硬選一種。':p.sub)+'</p><div class="note"><strong>主要線索：'+esc(LABEL[first])+'</strong><br>次要線索：'+esc(LABEL[second])+'</div><h2>為什麼這樣判斷？</h2><p>'+esc(support.length?'你明顯認同：「'+support.join('」、「')+'」。':'目前沒有足夠強的單一證據，因此這只是暫時假設。')+'</p><h2>為什麼不是另一種解釋？</h2><p>'+esc(pair.length?'系統特別比較了「'+LABEL[pair[0]]+'」與「'+LABEL[pair[1]]+'」，並依你對情境題的選擇調整排序；這是線索而非定論。':'這次沒有足夠的對比資料。')+'</p>'+(contrad.length?'<p class="muted">反向線索：你較不認同「'+esc(contrad[0])+'」。</p>':'')+'<h2>先別急著蓋章</h2><p>'+esc(p.caution)+'</p><p class="muted">這份結果描述你的主觀經驗，不推測對方是否喜歡你；不是診斷、性傾向分類或經過驗證的心理量表。</p><h2>時間會改寫答案</h2>'+change+'<div class="actions"><button class="secondary" id="save">保存本機快照</button><button class="secondary" id="export">匯出 JSON</button></div><div class="actions"><button class="secondary" id="again">重新測試</button></div><p class="muted" id="msg">快照僅存於這個瀏覽器，清除網站資料後可能消失。</p></section>';document.querySelector('#save').onclick=()=>{document.querySelector('#msg').textContent=save()?'已保存到這個瀏覽器。':'無法寫入本機儲存，請改用匯出。'};document.querySelector('#export').onclick=download;document.querySelector('#again').onclick=()=>{state={phase:'setup',path:'offline',adult:false,answers:{},index:0,base:[],pair:null,follow:[],followIndex:0,extra:{},saved:false};render()};return}
+const MODS=[
+{d:'I',q:'你對這個人的重要判斷，主要來自哪裡？',options:[['實際相處與可確認的事實',{I:-1}],['零碎資訊加上大量想像',{I:2}],['兩者都有',{I:1}],['資訊還太少',{}]]},
+{d:'U',q:'如果他明確回應你的感受，你預期自己會如何？',options:[['還是很想和他真實相處',{U:0}],['反覆猜測應該會減少很多',{U:2}],['兩者都會發生',{U:1}],['無法預測',{}]]}
+];
+const RULES={minimum:8,maximum:18,contrastGap:0.85,modifierThreshold:2.7};
+let st={phase:'welcome',path:'offline',adult:false,answers:{},queue:[],idx:0,asked:[],follow:[],fi:0};
+function eligible(q){return (!q.adult||st.adult)&&(!q.needContact||st.path!=='one')}
+function usable(){return BANK.filter(eligible)}
+function answerVal(id){return st.answers[id]}
+function stat(){const a={};for(const d of Object.keys(TYPES)){const items=usable().filter(q=>q.d===d&&answerVal(q.id)!=null);a[d]={n:items.length,v:items.length?items.reduce((sum,q)=>sum+answerVal(q.id),0)/items.length:null}}return a}
+function ranked(keys){const s=stat();return keys.filter(d=>s[d].n).sort((a,b)=>s[b].v-s[a].v)}
+function start(){st.queue=['r1','c1','p1','i1',...(st.path==='one'?[]:['u1']),...(st.adult?['s1']:[]),'r2','c2','p2','i2',...(st.path==='one'?[]:['u2'])].map(id=>BANK.find(q=>q.id===id)).filter(eligible);st.phase='quiz';st.idx=0;render()}
+function selectNext(){
+ const s=stat(),main=ranked(GROUP.attraction),mods=ranked(GROUP.modifiers);
+ const target=main.slice(0,2),gap=target.length===2?s[target[0]].v-s[target[1]].v:5;
+ let pool=usable().filter(q=>answerVal(q.id)==null&&!st.queue.some(x=>x.id===q.id));
+ pool.sort((a,b)=>{const weight=q=> (target.includes(q.d)?5:0)+(mods.includes(q.d)&&s[q.d].v>=2.7?2:0)+(s[q.d].n===0?3:0)+(q.id.startsWith('x')?1:0);return weight(b)-weight(a)});
+ if(st.queue.length>=RULES.maximum||(!pool.length)|| (st.queue.length>=RULES.minimum&&gap>=RULES.contrastGap&&target.every(d=>s[d].n>=2)))return false;
+ st.queue.push(pool[0]);return true
 }
-render();</script></body></html>
+function chooseFollow(){
+ const s=stat(),main=ranked(GROUP.attraction),top=main[0]||'C',second=main[1]||'P';
+ const pair=[top,second].sort().join(':');
+ const discriminant=DISCRIM.find(x=>x.key===pair);
+ const follow=discriminant?[discriminant]:[];
+ for(const m of MODS){if(s[m.d].n&&s[m.d].v>=RULES.modifierThreshold)follow.push(m)}
+ st.follow=follow.slice(0,3);st.fi=0;st.phase=follow.length?'follow':'result';render()
+}
+function tally(){const s=stat(),r={};for(const d of Object.keys(TYPES))if(s[d].n)r[d]=s[d].v;
+ for(const f of st.follow){const v=st.answers['f'+st.follow.indexOf(f)];if(v==null)continue;const mods=f.options[v]?.[1]||{};for(const [d,w] of Object.entries(mods))if(r[d]!=null)r[d]=Math.max(0,Math.min(4,r[d]+w*0.65))}
+ return r
+}
+function interpretation(){
+ const s=stat(),adjust=tally(),main=ranked(GROUP.attraction).sort((a,b)=>adjust[b]-adjust[a]);
+ const top=main[0]||'C',second=main[1]||'P',gap=(adjust[top]??0)-(adjust[second]??0);
+ const modifiers=ranked(GROUP.modifiers).filter(d=>(adjust[d]??0)>=2.7);
+ const support=st.queue.filter(q=>q.d===top&&answerVal(q.id)>=3).slice(0,2);
+ const counter=st.queue.filter(q=>q.d===top&&answerVal(q.id)<=1).slice(0,1);
+ const ambiguity=gap<0.65;
+ return {top,second,modifiers,support,counter,ambiguity,gap,adjust,s}
+}
+function history(){try{const a=JSON.parse(localStorage.getItem('loveAtlasV09')||'[]');return Array.isArray(a)?a:[]}catch{return []}}
+function snap(){const r=interpretation();return {at:new Date().toISOString(),version:'0.9',path:st.path,adult:st.adult,answers:{...st.answers},scores:r.adjust,primary:r.top,secondary:r.second,modifiers:r.modifiers}}
+function save(){try{const h=history();h.push(snap());localStorage.setItem('loveAtlasV09',JSON.stringify(h.slice(-12)));return true}catch{return false}}
+function exportJSON(){const b=new Blob([JSON.stringify(snap(),null,2)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='love-atlas-v0.9.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function optionsUI(options,val,attr){return options.map(([key,label])=>'<button class="opt" data-'+attr+'="'+key+'" aria-pressed="'+(val===key)+'">'+esc(label)+'</button>').join('')}
+function showQ(q,follow){
+ const n=follow?st.fi+1:st.idx+1,total=follow?st.follow.length:st.queue.length,v=answerVal(follow?'f'+st.fi:q.id);
+ const opts=follow?q.options.map((x,i)=>[i,x[0]]):[[0,'完全不像'],[1,'比較不像'],[2,'有一點像'],[3,'很像'],[4,'非常像']];
+ app.innerHTML='<section class="panel"><span class="tag">'+(follow?'關鍵鑑別':'你的具體感受')+' · '+n+' / '+total+'</span><div class="bar"><div style="width:'+Math.round(n/total*100)+'%"></div></div><h2>'+esc(q.q)+'</h2><p class="muted">'+(follow?'這題用來比較兩種可能解釋，不是考對錯。':'請以你目前對這個人的真實感受作答；沒有必要給自己貼標籤。')+'</p><div class="options">'+optionsUI(opts,v,'value')+'</div><div class="actions"><button class="secondary" id="back">← 返回</button><button class="primary" id="next" '+(v==null?'disabled':'')+'>繼續 →</button></div></section>';
+ document.querySelectorAll('[data-value]').forEach(el=>el.onclick=()=>{st.answers[follow?'f'+st.fi:q.id]=Number(el.dataset.value);render()});
+ document.querySelector('#back').onclick=()=>{if(follow){if(st.fi>0)st.fi--;else{st.phase='quiz';st.idx=st.queue.length-1}}else if(st.idx>0)st.idx--;else st.phase='setup';render()};
+ document.querySelector('#next').onclick=()=>{if(answerVal(follow?'f'+st.fi:q.id)==null)return;if(follow){st.fi++;if(st.fi>=st.follow.length)st.phase='result';render()}else{st.idx++;if(st.idx>=st.queue.length){if(selectNext())render();else chooseFollow()}else render()}};
+}
+function render(){
+ if(st.phase==='welcome'){app.innerHTML='<section class="panel"><span class="tag">LOVE ATLAS · V0.9 研究試測</span><h1>戀慕為何？<br>愛是什麼？<br>我在哪裡？</h1><p>想知道你跟這個人究竟怎麼了？這次先不談大道理，從你的真實感受開始。</p><p class="muted">標籤之外，我們都是關係與自我的這場戰鬥中，最前線的戰士。</p><div class="actions"><span></span><button class="primary" id="begin">開始探索 →</button></div></section>';document.querySelector('#begin').onclick=()=>{st.phase='setup';render()};return}
+ if(st.phase==='setup'){app.innerHTML='<section class="panel"><span class="tag">先選定一個對象</span><h2>你們目前的接觸情況？</h2><div class="options">'+optionsUI([['one','單向關注／幾乎沒有交流'],['online','有雙向線上交流'],['offline','有實際見面相處']],st.path,'path')+'</div><label><input type="checkbox" id="adult" '+(st.adult?'checked':'')+'> 我已成年，願意回答涉及性幻想與性吸引的問題</label><p class="muted">未勾選也能完成測驗；系統不會把未測量的性吸引當作零。預計約 10–18 題，依回答調整。</p><div class="actions"><span></span><button class="primary" id="start">進入測驗 →</button></div></section>';document.querySelectorAll('[data-path]').forEach(e=>e.onclick=()=>{st.path=e.dataset.path;render()});document.querySelector('#adult').onchange=e=>{st.adult=e.target.checked};document.querySelector('#start').onclick=start;return}
+ if(st.phase==='quiz'){showQ(st.queue[st.idx],false);return}
+ if(st.phase==='follow'){showQ(st.follow[st.fi],true);return}
+ if(st.phase==='result'){
+ const x=interpretation(),p=TYPES[x.top],second=TYPES[x.second],modifierText=x.modifiers.map(d=>TYPES[d].name).join('、'),prior=history().at(-1);
+ const supports=x.support.length?'你對以下敘述給了較高認同：「'+x.support.map(q=>q.q).join('」、「')+'」。':'目前沒有足夠強的單一支持線索。';
+ const compare=st.follow.find(f=>f.key)?.key,comp=compare?'我們特別用情境題區分「'+compare.split(':').map(d=>TYPES[d].name).join('」與「')+'」。':'目前兩種解釋的差距或題庫覆蓋情況，不足以進行特定情境鑑別。';
+ const title=x.ambiguity?'你可能同時有兩種心情，別急著二選一。':p.title;
+ const desc=x.ambiguity?'「'+p.name+'」與「'+second.name+'」目前得到接近的支持。兩者可以共存，不必硬選一種。':p.body;
+ app.innerHTML='<section class="panel"><span class="tag">當前狀態 · 不是終身標籤</span><h1>'+esc(title)+'</h1><p>'+esc(desc)+'</p><div class="note"><strong>主要方向：</strong>'+esc(p.name)+'<br><strong>伴隨方向：</strong>'+esc(second.name)+(modifierText?'<br><strong>可能放大感受的因素：</strong>'+esc(modifierText):'')+'</div><h2>我為什麼這樣說？</h2><p>'+esc(supports)+'</p><h2>另一種解釋呢？</h2><p>'+esc(comp)+' 你的回答也可能同時支持「'+esc(second.name)+'」，所以這不是非此即彼的診斷。</p>'+(x.counter.length?'<p class="muted">值得保留的反向線索：你較不認同「'+esc(x.counter[0].q)+'」。</p>':'')+'<h2>先別急著蓋章</h2><p>'+esc(x.modifiers.includes('I')?'你對這個人的想像可能超過實際證據，值得用相處重新校準。':x.modifiers.includes('U')?'關係不確定性可能放大了你的牽掛，但不能因此否定好感。':'下一次真實互動，可能改變今天的結論。')+'</p><p class="muted">本工具只描述你的回答傾向，無法推斷對方心意，也不能判定依附型態、性傾向或任何診斷。題庫及分流尚未經受測者實證驗證。</p><h2>下次再看，可能不一樣</h2><p class="muted">'+(prior?'上次快照 '+esc(new Date(prior.at).toLocaleDateString('zh-TW'))+' 的主要方向是「'+esc(TYPES[prior.primary]?.name||'未知')+'」。這是不同時間的描述比較，不代表進步或退步。':'目前沒有 V0.9 快照；可以保存本次結果供下次比較。')+'</p><div class="actions"><button class="secondary" id="save">保存本機快照</button><button class="secondary" id="export">匯出 JSON</button></div><div class="actions"><button class="secondary" id="restart">再測一個對象</button></div><p class="muted" id="msg">只存於這個瀏覽器；清除網站資料會失去紀錄。</p></section>';
+ document.querySelector('#save').onclick=()=>{document.querySelector('#msg').textContent=save()?'已保存本機快照。':'保存失敗，請使用匯出 JSON。'};
+ document.querySelector('#export').onclick=exportJSON;
+ document.querySelector('#restart').onclick=()=>{st={phase:'setup',path:'offline',adult:false,answers:{},queue:[],idx:0,asked:[],follow:[],fi:0};render()};
+ }
+}
+render();
+</script></body></html>
