@@ -152,7 +152,7 @@ function render(){
  document.querySelector('#save').onclick=()=>{document.querySelector('#msg').textContent=save()?'已保存本機快照。':'保存失敗，請使用匯出 JSON。'};
  document.querySelector('#export').onclick=exportJSON;
  document.querySelector('#self').onclick=()=>enterSelf('result');
- document.querySelector('#self').onclick=()=>{st.phase='self';st.selfIndex=0;render()};
+ 
  document.querySelector('#restart').onclick=()=>{st={phase:'setup',path:'offline',adult:false,period:'now',answers:{},queue:[],idx:0,asked:[],follow:[],fi:0,gateIndex:0,selfIndex:0,selfAnswers:{},pastIndex:0,pastAnswers:{},selfOrigin:'result'};render()};
  }
 }
