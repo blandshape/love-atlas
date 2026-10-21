@@ -110,8 +110,9 @@ function render(){
  const x=interpretation(),p=TYPES[x.top],second=TYPES[x.second],modifierText=x.modifiers.map(d=>TYPES[d].name).join('、'),prior=history().at(-1);
  const supports=x.support.length?'你對以下敘述給了較高認同：「'+x.support.map(q=>q.q).join('」、「')+'」。':'目前沒有足夠強的單一支持線索。';
  const compare=st.follow.find(f=>f.key)?.key,comp=compare?'我們特別用情境題區分「'+compare.split(':').map(d=>TYPES[d].name).join('」與「')+'」。':'目前兩種解釋的差距或題庫覆蓋情況，不足以進行特定情境鑑別。';
- const title=x.ambiguity?'你可能同時有兩種心情，別急著二選一。':p.title;
- const desc=x.ambiguity?'「'+p.name+'」與「'+second.name+'」目前得到接近的支持。兩者可以共存，不必硬選一種。':p.body;
+ const dominantModifier=x.modifiers.find(d=>(x.adjust[d]??0)>(x.adjust[x.top]??0)+0.7);
+ const title=dominantModifier?TYPES[dominantModifier].title:(x.ambiguity?'你可能同時有兩種心情，別急著二選一。':p.title);
+ const desc=dominantModifier?TYPES[dominantModifier].body+' 同時，你的主要靠近方向是「'+p.name+'」。':(x.ambiguity?'「'+p.name+'」與「'+second.name+'」目前得到接近的支持。兩者可以共存，不必硬選一種。':p.body);
  app.innerHTML='<section class="panel"><span class="tag">當前狀態 · 不是終身標籤</span><h1>'+esc(title)+'</h1><p>'+esc(desc)+'</p><div class="note"><strong>主要方向：</strong>'+esc(p.name)+'<br><strong>伴隨方向：</strong>'+esc(second.name)+(modifierText?'<br><strong>可能放大感受的因素：</strong>'+esc(modifierText):'')+'</div><h2>我為什麼這樣說？</h2><p>'+esc(supports)+'</p><h2>另一種解釋呢？</h2><p>'+esc(comp)+' 你的回答也可能同時支持「'+esc(second.name)+'」，所以這不是非此即彼的診斷。</p>'+(x.counter.length?'<p class="muted">值得保留的反向線索：你較不認同「'+esc(x.counter[0].q)+'」。</p>':'')+'<h2>先別急著蓋章</h2><p>'+esc(x.modifiers.includes('I')?'你對這個人的想像可能超過實際證據，值得用相處重新校準。':x.modifiers.includes('U')?'關係不確定性可能放大了你的牽掛，但不能因此否定好感。':'下一次真實互動，可能改變今天的結論。')+'</p><p class="muted">本工具只描述你的回答傾向，無法推斷對方心意，也不能判定依附型態、性傾向或任何診斷。題庫及分流尚未經受測者實證驗證。</p><h2>下次再看，可能不一樣</h2><p class="muted">'+(prior?'上次快照 '+esc(new Date(prior.at).toLocaleDateString('zh-TW'))+' 的主要方向是「'+esc(TYPES[prior.primary]?.name||'未知')+'」。這是不同時間的描述比較，不代表進步或退步。':'目前沒有 V0.9 快照；可以保存本次結果供下次比較。')+'</p><div class="actions"><button class="secondary" id="save">保存本機快照</button><button class="secondary" id="export">匯出 JSON</button></div><div class="actions"><button class="secondary" id="restart">再測一個對象</button></div><p class="muted" id="msg">只存於這個瀏覽器；清除網站資料會失去紀錄。</p></section>';
  document.querySelector('#save').onclick=()=>{document.querySelector('#msg').textContent=save()?'已保存本機快照。':'保存失敗，請使用匯出 JSON。'};
  document.querySelector('#export').onclick=exportJSON;
